@@ -8,6 +8,10 @@ import { o3MiniModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt';
 import { OutputManager } from './output-manager';
 
+// 导入必要的代理库
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import nodeFetch from 'node-fetch';
+
 // Initialize output manager for coordinated console/progress output
 const output = new OutputManager();
 
@@ -32,13 +36,28 @@ type ResearchResult = {
 };
 
 // increase this if you have higher API rate limits
-const ConcurrencyLimit = 2;
+const ConcurrencyLimit = 1;
 
 // Initialize Firecrawl with optional API key and optional base url
 
+// const firecrawl = new FirecrawlApp({
+//   apiKey: process.env.FIRECRAWL_KEY ?? '',
+//   apiUrl: process.env.FIRECRAWL_BASE_URL,
+// });
+
+// 创建代理配置
+const proxyConfig = process.env.PROXY_URL ? {
+  fetch: async (url: string, init?: any) => {
+    const proxyAgent = new HttpsProxyAgent(process.env.PROXY_URL!);
+    return nodeFetch(url, { ...init, agent: proxyAgent });
+  }
+} : {};
+
+// 初始化 Firecrawl 客户端
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_KEY ?? '',
   apiUrl: process.env.FIRECRAWL_BASE_URL,
+  ...proxyConfig,  // 添加代理配置
 });
 
 // take en user query, return a list of SERP queries

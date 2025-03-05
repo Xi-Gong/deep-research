@@ -8,9 +8,21 @@ interface CustomOpenAIProviderSettings extends OpenAIProviderSettings {
 }
 
 // Providers
+// const openai = createOpenAI({
+//   apiKey: process.env.OPENAI_KEY!,
+//   baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
+// } as CustomOpenAIProviderSettings);
+
+// 添加代理支持
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_KEY!,
   baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
+  fetch: process.env.PROXY_URL ? async (url, init) => {
+    const { default: nodeFetch } = await import('node-fetch');
+    const { HttpsProxyAgent } = await import('https-proxy-agent');
+    const proxyAgent = new HttpsProxyAgent(process.env.PROXY_URL);
+    return nodeFetch(url, { ...init, agent: proxyAgent });
+  } : undefined,
 } as CustomOpenAIProviderSettings);
 
 const customModel = process.env.OPENAI_MODEL || 'o3-mini';

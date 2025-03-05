@@ -90,6 +90,7 @@ flowchart TB
 
 ```bash
 npm install
+npm install node-fetch https-proxy-agent	# add proxy support
 ```
 
 3. Set up environment variables in a `.env.local` file:
@@ -102,9 +103,14 @@ FIRECRAWL_KEY="your_firecrawl_key"
 OPENAI_KEY="your_openai_key"
 ```
 
-To use local LLM, comment out `OPENAI_KEY` and instead uncomment `OPENAI_ENDPOINT` and `OPENAI_MODEL`:
-- Set `OPENAI_ENDPOINT` to the address of your local server (eg."http://localhost:1234/v1")
-- Set `OPENAI_MODEL` to the name of the model loaded in your local server.
+### Custom endpoints and models
+
+There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini) as well as the model string (also support local LLM).
+
+```bash
+OPENAI_ENDPOINT="custom_endpoint"	# eg. https://openrouter.ai/api/v1
+OPENAI_MODEL="custom_model"		# eg. openai/o3-mini
+```
 
 ### Docker
 
@@ -153,15 +159,6 @@ The final report will be saved as `output.md` in your working directory.
 If you have a paid version of Firecrawl or a local version, feel free to increase the `ConcurrencyLimit` in `deep-research.ts` so it runs a lot faster.
 
 If you have a free version, you may sometimes run into rate limit errors, you can reduce the limit (but it will run a lot slower).
-
-### Custom endpoints and models
-
-There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini) as well as the model string.
-
-```bash
-OPENAI_ENDPOINT="custom_endpoint"
-OPENAI_MODEL="custom_model"
-```
 
 ## How It Works
 

@@ -4,7 +4,7 @@ import { compact } from 'lodash-es';
 import pLimit from 'p-limit';
 import { z } from 'zod';
 
-import { o3MiniModel, trimPrompt } from './ai/providers';
+import { o3MiniModel, summaryModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt';
 import { OutputManager } from './output-manager';
 
@@ -30,9 +30,19 @@ export type ResearchProgress = {
   completedQueries: number;
 };
 
+// type ResearchResult = {
+//   learnings: string[];
+//   visitedUrls: string[];
+// };
+
 type ResearchResult = {
   learnings: string[];
-  visitedUrls: string[];
+  visitedUrls: UrlWithSummary[];
+};
+
+type UrlWithSummary = {
+  url: string;
+  summary: string;
 };
 
 // increase this if you have higher API rate limits
@@ -154,7 +164,7 @@ export async function writeFinalReport({
 }: {
   prompt: string;
   learnings: string[];
-  visitedUrls: string[];
+  visitedUrls: UrlWithSummary[];  // 更新参数类型
 }) {
   const learningsString = trimPrompt(
     learnings
@@ -175,7 +185,10 @@ export async function writeFinalReport({
   });
 
   // Append the visited URLs section to the report
-  const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
+  // const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
+  const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(urlObj => 
+    `- [${urlObj.url}](${urlObj.url})\n  *${urlObj.summary}*`
+  ).join('\n\n')}`;
   return res.object.reportMarkdown + urlsSection;
 }
 
@@ -184,14 +197,14 @@ export async function deepResearch({
   breadth,
   depth,
   learnings = [],
-  visitedUrls = [],
+  visitedUrls = [] as UrlWithSummary[], // 明确类型
   onProgress,
 }: {
   query: string;
   breadth: number;
   depth: number;
   learnings?: string[];
-  visitedUrls?: string[];
+  visitedUrls?: UrlWithSummary[]; // 更新参数类型
   onProgress?: (progress: ResearchProgress) => void;
 }): Promise<ResearchResult> {
   const progress: ResearchProgress = {
@@ -232,7 +245,62 @@ export async function deepResearch({
           });
 
           // Collect URLs from this search
-          const newUrls = compact(result.data.map(item => item.url));
+          // const newUrls = compact(result.data.map(item => item.url));
+
+          // Collect URLs from this search with summaries
+          // const newUrls = compact(result.data.map(item => {
+          //   if (!item.url) return null;
+            
+          //   let summary = '';
+          //   if (item.markdown && item.markdown.length > 0) {
+          //     summary = item.markdown.slice(0, 80).replace(/\n/g, ' ');
+          //     if (item.markdown.length > 80) summary += '...';
+          //   }
+            
+          //   return {
+          //     url: item.url,
+          //     summary
+          //   };
+          // }));
+
+          // Collect URLs from this search with AI-generated summaries
+          const newUrlsPromises = result.data.map(async item => {
+            if (!item.url) return null;
+            
+            let summary = '';
+            if (item.markdown && item.markdown.length > 0) {
+              try {
+                // 默认使用gpt-4o-mini生成摘要
+                const summaryResult = await generateObject({
+                  model: summaryModel,
+                  system: systemPrompt(),
+                  prompt: `从以下内容中提取核心信息，并生成一个简洁的中文摘要（不超过50个汉字）。
+                  
+                  摘要应关注内容的主题、要点和重要信息。
+                  
+                  需要总结的内容：
+                  ${trimPrompt(item.markdown, 5000)}`,
+                  schema: z.object({
+                    summary: z.string().describe('内容的简洁中文摘要，不超过50个汉字。专注于主题和关键信息。')
+                  }),
+                });
+                
+                summary = summaryResult.object.summary;
+              } catch (e) {
+                // 如果AI摘要生成失败，回退到简单截断
+                summary = item.markdown.slice(0, 150).replace(/\n/g, ' ');
+                if (item.markdown.length > 150) summary += '...';
+              }
+            }
+            
+            return {
+              url: item.url,
+              summary
+            };
+          });
+
+          // 等待所有摘要生成完成并过滤null值
+          const newUrls = compact(await Promise.all(newUrlsPromises));
           const newBreadth = Math.ceil(breadth / 2);
           const newDepth = depth - 1;
 

@@ -26,11 +26,16 @@ const openai = createOpenAI({
 } as CustomOpenAIProviderSettings);
 
 const customModel = process.env.OPENAI_MODEL || 'o3-mini';
+// 摘要模型设置
+const summaryModelName = process.env.SUMMARY_MODEL || 'gpt-4o-mini';
 
 // Models
-
 export const o3MiniModel = openai(customModel, {
   reasoningEffort: customModel.startsWith('o') ? 'medium' : undefined,
+  structuredOutputs: true,
+});
+
+export const summaryModel = openai(summaryModelName, {
   structuredOutputs: true,
 });
 

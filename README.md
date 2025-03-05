@@ -101,7 +101,7 @@ FIRECRAWL_KEY="your_firecrawl_key"
 # FIRECRAWL_BASE_URL="http://localhost:3002"
 
 OPENAI_KEY="your_openai_key"
-PROXY_URL="http://127.0.0.1:7890"
+PROXY_URL="your_proxy_url" # eg. http://127.0.0.1:7890
 ```
 
 ### Custom endpoints and models

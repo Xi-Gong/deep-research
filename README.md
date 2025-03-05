@@ -109,7 +109,8 @@ There are 2 other optional env vars that lets you tweak the endpoint (for other 
 
 ```bash
 OPENAI_ENDPOINT="custom_endpoint"	# eg. https://openrouter.ai/api/v1
-OPENAI_MODEL="custom_model"		# eg. openai/o3-mini
+OPENAI_MODEL="custom_main_model"		# eg. openai/o3-mini
+SUMMARY_MODEL="custom_summary_model"  # default gpt-4o-mini, use to add webpage summary under url
 ```
 
 ### Docker

@@ -20,7 +20,7 @@ const openai = createOpenAI({
   fetch: process.env.PROXY_URL ? async (url, init) => {
     const { default: nodeFetch } = await import('node-fetch');
     const { HttpsProxyAgent } = await import('https-proxy-agent');
-    const proxyAgent = new HttpsProxyAgent(process.env.PROXY_URL);
+    const proxyAgent = new HttpsProxyAgent(process.env.PROXY_URL!);
     return nodeFetch(url, { ...init, agent: proxyAgent });
   } : undefined,
 } as CustomOpenAIProviderSettings);

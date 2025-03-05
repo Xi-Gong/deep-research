@@ -105,7 +105,7 @@ OPENAI_KEY="your_openai_key"
 
 ### Custom endpoints and models
 
-There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini) as well as the model string (also support local LLM).
+There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini, also support local LLM) as well as the model string.
 
 ```bash
 OPENAI_ENDPOINT="custom_endpoint"	# eg. https://openrouter.ai/api/v1

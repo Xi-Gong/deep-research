@@ -30,30 +30,18 @@ export type ResearchProgress = {
   completedQueries: number;
 };
 
-// type ResearchResult = {
-//   learnings: string[];
-//   visitedUrls: string[];
-// };
+type UrlWithSummary = {
+  url: string;
+  summary: string;
+};
 
 type ResearchResult = {
   learnings: string[];
   visitedUrls: UrlWithSummary[];
 };
 
-type UrlWithSummary = {
-  url: string;
-  summary: string;
-};
-
 // increase this if you have higher API rate limits
 const ConcurrencyLimit = 1;
-
-// Initialize Firecrawl with optional API key and optional base url
-
-// const firecrawl = new FirecrawlApp({
-//   apiKey: process.env.FIRECRAWL_KEY ?? '',
-//   apiUrl: process.env.FIRECRAWL_BASE_URL,
-// });
 
 // 创建代理配置
 const proxyConfig = process.env.PROXY_URL ? {
@@ -64,6 +52,7 @@ const proxyConfig = process.env.PROXY_URL ? {
 } : {};
 
 // 初始化 Firecrawl 客户端
+// Initialize Firecrawl with optional API key and optional base url
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_KEY ?? '',
   apiUrl: process.env.FIRECRAWL_BASE_URL,
@@ -185,9 +174,8 @@ export async function writeFinalReport({
   });
 
   // Append the visited URLs section to the report
-  // const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
   const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(urlObj => 
-    `- [${urlObj.url}](${urlObj.url})\n  *${urlObj.summary}*`
+    `- ${urlObj.url}\n  *${urlObj.summary}*`
   ).join('\n\n')}`;
   return res.object.reportMarkdown + urlsSection;
 }
@@ -244,58 +232,61 @@ export async function deepResearch({
             scrapeOptions: { formats: ['markdown'] },
           });
 
-          // Collect URLs from this search
-          // const newUrls = compact(result.data.map(item => item.url));
-
-          // Collect URLs from this search with summaries
-          // const newUrls = compact(result.data.map(item => {
-          //   if (!item.url) return null;
-            
-          //   let summary = '';
-          //   if (item.markdown && item.markdown.length > 0) {
-          //     summary = item.markdown.slice(0, 80).replace(/\n/g, ' ');
-          //     if (item.markdown.length > 80) summary += '...';
-          //   }
-            
-          //   return {
-          //     url: item.url,
-          //     summary
-          //   };
-          // }));
-
-          // Collect URLs from this search with AI-generated summaries
+          // Collect URLs from this search with metadata descriptions
           const newUrlsPromises = result.data.map(async item => {
             if (!item.url) return null;
             
             let summary = '';
-            if (item.markdown && item.markdown.length > 0) {
+            
+            // 优先使用metadata的title作为摘要
+            if (item.metadata?.title && item.metadata.title.trim() !== '') {
+              summary = item.metadata.title;
+            } 
+            // 其次使用metadata的description作为摘要
+            else if (item.metadata?.description && item.metadata.description.trim() !== '') {
+              summary = item.metadata.description.slice(0, 150);
+              if (item.metadata.description.length > 150) {
+                summary += '...';
+              }
+            }
+            // 最后尝试使用AI生成摘要
+            else if (item.markdown && item.markdown.length > 0) {
               try {
                 // 默认使用gpt-4o-mini生成摘要
+                log(`尝试为URL指向的页面内容生成AI摘要: ${item.url}`);
                 const summaryResult = await generateObject({
                   model: summaryModel,
                   system: systemPrompt(),
-                  prompt: `从以下内容中提取核心信息，并生成一个简洁的中文摘要（不超过50个汉字）。
+                  prompt: `Extract the core information from the following content and generate a concise Chinese summary (no more than 50 Chinese characters).
                   
-                  摘要应关注内容的主题、要点和重要信息。
+                  The summary should focus on the content's main topic, key points, and important information.
                   
-                  需要总结的内容：
-                  ${trimPrompt(item.markdown, 5000)}`,
+                  Content to summarize:
+                  ${trimPrompt(item.markdown)}`,
                   schema: z.object({
-                    summary: z.string().describe('内容的简洁中文摘要，不超过50个汉字。专注于主题和关键信息。')
+                    summary: z.string().describe('A concise Chinese summary of the content, no more than 50 Chinese characters. Focus on the main topic and key information.')
                   }),
                 });
                 
                 summary = summaryResult.object.summary;
+                log(`成功生成摘要: ${summaryResult.object.summary}`);
               } catch (e) {
                 // 如果AI摘要生成失败，回退到简单截断
                 summary = item.markdown.slice(0, 150).replace(/\n/g, ' ');
                 if (item.markdown.length > 150) summary += '...';
+                log(`AI摘要生成失败: ${item.url}`, e);
               }
             }
-            
+
+            // 确保summary不为空
+            if (!summary || summary.trim() === '') {
+              summary = '无可用摘要';
+            }
+
+            // 返回URL和摘要对象
             return {
               url: item.url,
-              summary
+              summary: summary
             };
           });
 

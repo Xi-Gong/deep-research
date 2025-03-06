@@ -7,13 +7,7 @@ interface CustomOpenAIProviderSettings extends OpenAIProviderSettings {
   baseURL?: string;
 }
 
-// Providers
-// const openai = createOpenAI({
-//   apiKey: process.env.OPENAI_KEY!,
-//   baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
-// } as CustomOpenAIProviderSettings);
-
-// 添加代理支持
+// Providers，添加代理支持
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_KEY!,
   baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
@@ -25,17 +19,19 @@ const openai = createOpenAI({
   } : undefined,
 } as CustomOpenAIProviderSettings);
 
-const customModel = process.env.OPENAI_MODEL || 'o3-mini';
+const customModelName = process.env.OPENAI_MODEL || 'o3-mini';
+
 // 摘要模型设置
 const summaryModelName = process.env.SUMMARY_MODEL || 'gpt-4o-mini';
 
 // Models
-export const o3MiniModel = openai(customModel, {
-  reasoningEffort: customModel.startsWith('o') ? 'medium' : undefined,
+export const o3MiniModel = openai(customModelName, {
+  reasoningEffort: customModelName.startsWith('o') ? 'medium' : undefined,
   structuredOutputs: true,
 });
 
 export const summaryModel = openai(summaryModelName, {
+  reasoningEffort: summaryModelName.startsWith('o') ? 'medium' : undefined,
   structuredOutputs: true,
 });
 

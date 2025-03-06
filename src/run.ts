@@ -85,7 +85,9 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
 
   log(`\n\nLearnings:\n\n${learnings.join('\n')}`);
   log(
-    `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.join('\n')}`,
+    `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.map(item => 
+      `- ${item.url}\n  ${item.summary}`
+    ).join('\n\n')}`,
   );
   log('Writing final report...');
 

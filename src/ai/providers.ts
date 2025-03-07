@@ -26,12 +26,12 @@ const summaryModelName = process.env.SUMMARY_MODEL || 'gpt-4o-mini';
 
 // Models
 export const o3MiniModel = openai(customModelName, {
-  reasoningEffort: customModelName.startsWith('o') ? 'medium' : undefined,
+  reasoningEffort: customModelName.startsWith('o3') ? 'high' : undefined,
   structuredOutputs: true,
 });
 
 export const summaryModel = openai(summaryModelName, {
-  reasoningEffort: summaryModelName.startsWith('o') ? 'medium' : undefined,
+  reasoningEffort: summaryModelName.startsWith('o3') ? 'medium' : undefined,
   structuredOutputs: true,
 });
 
